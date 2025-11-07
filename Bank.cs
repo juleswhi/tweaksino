@@ -58,13 +58,15 @@ public static class Bank {
 }
 
 public class BankMessageManager : WebSocketSharp.Server.WebSocketBehavior {
-    private static readonly string key = "pass";
+    private static readonly string key = "fx30";
 
     // 0 -> cmd
     // 1 -> server key
     // 3 -> optional ( id )
     // 2 -> optional ( client key )
     protected override void OnMessage(MessageEventArgs e) {
+        Console.WriteLine($"{e.Data}");
+
         var inp = e.Data.ToLower().Split(" ");
         var cmd = inp[0];
 
@@ -74,7 +76,6 @@ public class BankMessageManager : WebSocketSharp.Server.WebSocketBehavior {
         // Server Key
         if(inp.Length <= 2) return;
         if(inp[1] != key) return;
-
 
         // must have id
         if(inp.Length >= 4) {

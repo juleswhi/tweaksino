@@ -1,5 +1,4 @@
 public class Blackjack {
-
     public class Player {
         public required int id;
         public List<(Card.Suit, Card.Rank)> cards = [];
