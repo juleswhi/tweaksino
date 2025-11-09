@@ -1,21 +1,20 @@
 using WebSocketSharp;
 
 public static class Bank {
-    private static List<Bitch> bitches = [];
-
     public static Bitch Join(string pass) {
         var bbb = new Bitch{
-            Id = RandomString(1000),
+            Id = "'" + RandomString(12) + "'",
             Money = 0,
-            Password = System.Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(pass.GetHashCode().ToString()))
+            Password = System.Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(pass))
         };
 
-        bitches.Add(bbb);
+        DatabaseLayer.Create(bbb);
 
         return bbb;
     }
 
     public static Bitch Get(string id) {
+        var bitches = DatabaseLayer.Query<Bitch>();
         var b = bitches.FirstOrDefault(x => x.Id == id);
         if(b is null) { return new Bitch{ Id = "" }; }
 
@@ -30,6 +29,7 @@ public static class Bank {
     public static void Add(string id, double amount) {
         var b = Get(id);
         b.Money += amount;
+        DatabaseLayer.Update(b);
     }
 
     public static bool Take(string id, double amount) {
@@ -39,12 +39,13 @@ public static class Bank {
         }
         b.Money -= amount;
 
+        DatabaseLayer.Update(b);
         return true;
     }
 
     public static bool CorrectPassword(string id, string inp) {
         var b = Get(id);
-        var base64 = System.Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(inp.GetHashCode().ToString()));
+        var base64 = System.Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(inp));
         return base64 == b.Password;
     }
 
@@ -65,9 +66,7 @@ public class BankMessageManager : WebSocketSharp.Server.WebSocketBehavior {
     // 3 -> optional ( id )
     // 2 -> optional ( client key )
     protected override void OnMessage(MessageEventArgs e) {
-        Console.WriteLine($"{e.Data}");
-
-        var inp = e.Data.ToLower().Split(" ");
+        var inp = e.Data.Split(" ");
         var cmd = inp[0];
 
         string id = "";
@@ -75,14 +74,18 @@ public class BankMessageManager : WebSocketSharp.Server.WebSocketBehavior {
 
         // Server Key
         if(inp.Length <= 2) return;
-        if(inp[1] != key) return;
+       if(inp[1] != key) {
+           return;
+       }
 
         // must have id
         if(inp.Length >= 4) {
-            id = Bank.RandomString(1_000);
+            id = inp[2];
 
             // must have client key
-            if(!Bank.CorrectPassword(id, inp[3])) return;
+            if(!Bank.CorrectPassword(id, inp[3])) {
+                return;
+            }
 
             rest = inp[4..];
         } else {
@@ -92,7 +95,8 @@ public class BankMessageManager : WebSocketSharp.Server.WebSocketBehavior {
         Action run = e.Data.ToLower().Split(" ")[0] switch {
             "new" => () => {
                 var b = Bank.Join(rest[0]);
-                Send(b.Id.ToString());
+                var id = new string(b.Id.Where(x => x != '\'').ToArray());
+                Send(id);
             },
             "money" => () => {
                 var m = Bank.Money(id);
@@ -131,8 +135,9 @@ public class BankMessageManager : WebSocketSharp.Server.WebSocketBehavior {
     }
 }
 
-public class Bitch {
-    public string Id = "";
-    public double Money;
-    public string Password = "";
+public class Bitch : IDatabaseModel {
+    [PrimaryKey]
+    public string Id { get; set; } = "";
+    public double Money { get; set; } = 0;
+    public string Password { get; set; } = "";
 }

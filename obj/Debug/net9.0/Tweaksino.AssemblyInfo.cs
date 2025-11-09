@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Tweaksino")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+e11f0012014f2e43ce3937db9c1b7416ad9723b6")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+07bd264247b17651359a925db74cce02e684255b")]
 [assembly: System.Reflection.AssemblyProductAttribute("Tweaksino")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Tweaksino")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
