@@ -131,7 +131,7 @@ public class BankMessageManager : WebSocketSharp.Server.WebSocketBehavior {
             "orders" => () => {
                 var orders = DatabaseLayer
                     .Query<ShopOrder>()
-                    .Where(x => x.UserId.Id == id)
+                    .Where(x => x.UserId == id)
                     .Select(x => $"{x.Id} {x.McItemId} {x.Quantity}")
                     .Aggregate((x, y) => $"{x},{y}");
                 Send(orders);
@@ -241,7 +241,7 @@ public class ShopOrder : IDatabaseModel {
     public string McItemId { get; set; } = "";
 
     [ForeignKey(typeof(Bitch))]
-    public int UserId { get; set; } = new();
+    public string UserId { get; set; } = "";
 
     public int Quantity { get; set; }
     public bool Collected { get; set; } = false;
