@@ -3,7 +3,7 @@ using WebSocketSharp;
 public static class Bank {
     public static Bitch Join(string pass) {
         var bbb = new Bitch{
-            Id = "'" + RandomString(12) + "'",
+            Id = RandomString(6),
             Money = 0,
             Password = System.Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(pass))
         };
@@ -128,6 +128,71 @@ public class BankMessageManager : WebSocketSharp.Server.WebSocketBehavior {
                     Send(Bank.Money(id).ToString());
                 }
             },
+            "orders" => () => {
+                var orders = DatabaseLayer
+                    .Query<ShopOrder>()
+                    .Where(x => x.UserId.Id == id)
+                    .Select(x => $"{x.Id} {x.McItemId} {x.Quantity}")
+                    .Aggregate((x, y) => $"{x},{y}");
+                Send(orders);
+            },
+            "add" => () => {
+                if(rest.Length != 2) return;
+                var item_name = rest[0];
+                if(!int.TryParse(rest[1], out int quantity)) return;
+
+                var shop = DatabaseLayer.Query<Shop>().Where(x => x.Id == 0).First();
+
+                var item = DatabaseLayer
+                    .Query<McItem>()
+                    .Where(x => x.Id == item_name)
+                    .FirstOrDefault();
+
+                // TODO: Smart pricing here
+                if(item is null) {
+                    item = new McItem() {
+                        Id = $"{item_name}",
+                        Price = 0.5,
+                    };
+
+                    DatabaseLayer.Create(item);
+                    Console.WriteLine($"Creating item: {item}");
+                } else {
+                    Console.WriteLine($"{item}");
+                }
+
+                var shop_item = DatabaseLayer
+                    .Query<ShopItem>()
+                    .Where(x => x.McItemId == item.Id)
+                    .FirstOrDefault();
+
+                if(shop_item is null) {
+                    var order = new ShopItem() {
+                        ShopId = shop.Id,
+                        McItemId = item.Id,
+                        Quantity = quantity,
+                    };
+
+                    DatabaseLayer.Create(order);
+                    return;
+                }
+
+                shop_item.Quantity += quantity;
+                DatabaseLayer.Update(shop_item);
+
+            },
+            "collect" => () => {
+                if(!int.TryParse(rest[0], out int order_id)) return;
+                var order = DatabaseLayer
+                    .Query<ShopOrder>()
+                    .FirstOrDefault(x => x.Id == order_id);
+
+                if(order is null) return;
+
+                order.Collected = true;
+
+                DatabaseLayer.Update(order);
+            },
             _ => () => {},
         };
 
@@ -141,3 +206,44 @@ public class Bitch : IDatabaseModel {
     public double Money { get; set; } = 0;
     public string Password { get; set; } = "";
 }
+
+public class Shop : IDatabaseModel {
+    [PrimaryKey]
+    public int Id { get; set; } = 0;
+}
+
+public class McItem : IDatabaseModel {
+    [PrimaryKey]
+    public string Id { get; set; } = "";
+    public double Price { get; set; } = 1;
+}
+
+public class ShopItem : IDatabaseModel {
+    [PrimaryKey]
+    [ForeignKey(typeof(Shop))]
+    public int ShopId { get; set; }
+
+    [PrimaryKey]
+    [ForeignKey(typeof(McItem))]
+    public string McItemId { get; set; } = "";
+
+    public int Quantity { get; set; }
+}
+
+public class ShopOrder : IDatabaseModel {
+    [PrimaryKey]
+    public int Id { get; set; }
+
+    [ForeignKey(typeof(Shop))]
+    public Shop ShopId { get; set; } = new();
+
+    [ForeignKey(typeof(McItem))]
+    public McItem McItemId { get; set; } = new();
+
+    [ForeignKey(typeof(Bitch))]
+    public Bitch UserId { get; set; } = new();
+
+    public int Quantity { get; set; }
+    public bool Collected { get; set; } = false;
+}
+

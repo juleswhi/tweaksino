@@ -15,13 +15,21 @@ internal class ForeignKeyAttribute : Attribute {
 
 public static class ModelHelper
 {
-    public static IEnumerable<(string, string)> GetPrimaryKey<T>(this T model) where T : IDatabaseModel
+
+    public enum KeyType { String, Number }
+    public class Key {
+        public KeyType KeyType { get; set; } = KeyType.Number;
+        public string? String { get; set; } = null;
+        public int? Number { get; set; } = null;
+    }
+    public static IEnumerable<(string, object)> GetPrimaryKey<T>(this T model) where T : IDatabaseModel
     {
         foreach (var prop in model.GetType().GetProperties())
         {
             var attr = Attribute.GetCustomAttribute(prop, typeof(PrimaryKey));
             if (attr is null) continue;
-            yield return (prop.Name, (string)prop.GetValue(model)!);
+            Console.WriteLine($"Prop: {prop.Name}'s type is {prop.GetType()}");
+            yield return (prop.Name, prop.GetValue(model)!);
         }
     }
 
@@ -161,12 +169,15 @@ public static class DatabaseLayer
         var props = type.GetProperties();
         var names = props.Select(x => x.Name);
         var aggr = names.Aggregate((x, y) => $"{x}, {y}");
-        string vals = type.GetProperties().
+        List<string> vals_list = type.GetProperties().
             Select(x => x.GetValue(obj)).
-            Select(x => x!.ToString()).
-            // Select(x => x!.Replace("'", "''")).
-            Aggregate((x, y) => {
-                    return $"{x}, '{y}'";
+            Select(x => x!.ToString()!).ToList();
+
+        vals_list[0] = $"'{vals_list[0]}'";
+
+        // Select(x => x!.Replace("'", "''")).
+        var vals = vals_list.Aggregate((x, y) => {
+                return $"{x}, '{y}'";
                 })!;
 
         var cmd = $"insert into {type.Name} ({aggr}) values ({vals})";
