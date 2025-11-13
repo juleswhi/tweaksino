@@ -235,13 +235,13 @@ public class ShopOrder : IDatabaseModel {
     public int Id { get; set; }
 
     [ForeignKey(typeof(Shop))]
-    public Shop ShopId { get; set; } = new();
+    public int ShopId { get; set; } = new();
 
     [ForeignKey(typeof(McItem))]
-    public McItem McItemId { get; set; } = new();
+    public string McItemId { get; set; } = "";
 
     [ForeignKey(typeof(Bitch))]
-    public Bitch UserId { get; set; } = new();
+    public int UserId { get; set; } = new();
 
     public int Quantity { get; set; }
     public bool Collected { get; set; } = false;
